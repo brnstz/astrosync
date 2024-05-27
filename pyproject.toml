@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "astrosync"
+version = "0.0.1"
+authors = [
+    { name = "Brian Seitz", email = "brnstz@gmail.com" },
+]
+
+description = "Syncs files from Astrohaus Postbox to an unlimited number of writing directories"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+astrosync = "astrosync.cli:main"
