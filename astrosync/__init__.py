@@ -18,6 +18,7 @@ class FileSpec:
     hash: str
     year: str
     num: int
+    src_date_num: int
 
 class Syncer:
     def __init__(self, src: str, dst: str, dry_run: bool):
@@ -94,12 +95,13 @@ class Syncer:
                 # For "stories" like those in "journal" we assume the number is a
                 # unique date instead of an incrementing version.
                 if pb.file_story in _DATE_NUM_STORIES:
-                    if pb.num is None:
-                        log.warning("Skipping date_num story with no date: %s" % (pb))
+                    resolved_pb_num = pb.num if pb.num is not None else pb.src_date_num
+                    if resolved_pb_num is None:
+                        log.error("Skipping date_num story with no date: %s" % (pb))
                         continue
 
-                    dst_path = self.convert_pb_to_wt_path(pb, pb.num)
-                    dst_spec = filespec_copy_into_wt(pb, pb.num, dst_path)
+                    dst_path = self.convert_pb_to_wt_path(pb, resolved_pb_num)
+                    dst_spec = filespec_copy_into_wt(pb, resolved_pb_num, dst_path)
                 else:
                     max_num = max_num + 1
                     dst_path = self.convert_pb_to_wt_path(pb, max_num)
@@ -112,6 +114,7 @@ class Syncer:
                 if self.dry_run:
                     log.warning("Dry run, would copy from %s to %s" % (pb.full_path, dst_spec.full_path))
                 else:
+                    print("Copying %s to %s" % (pb.full_path, dst_spec.full_path))
                     with open(pb.full_path, "rb") as fin:
                         with open(dst_spec.full_path, "wb") as fout:
                             while True:
@@ -134,6 +137,7 @@ def filespec_from_postbox(full_path: str) -> FileSpec:
         full_path, file_story, None,
         compute_hash(full_path), compute_postbox_year(full_path),
         compute_num(full_path, len(file_story) + 11),
+        compute_src_date_num(full_path),
     )
 
 def filespec_from_writing(full_path: str) -> FileSpec:
@@ -141,13 +145,14 @@ def filespec_from_writing(full_path: str) -> FileSpec:
     return FileSpec(
         full_path, file_story, compute_writing_dir_story(full_path),
         compute_hash(full_path), compute_writing_year(full_path),
-        compute_num(full_path, len(file_story)) if file_story is not None else None
+        compute_num(full_path, len(file_story)) if file_story is not None else None,
+        None,
     )
 
 def filespec_copy_into_wt(pb_spec: FileSpec, num: int, full_path: str) -> FileSpec:
     return FileSpec(
         full_path, pb_spec.file_story, pb_spec.dir_story, pb_spec.hash,
-        pb_spec.year, num,
+        pb_spec.year, num, None,
     )
 
 def compute_postbox_story(full_path: str) -> str:
@@ -193,7 +198,15 @@ def compute_writing_year(full_path: str) -> str:
     dirname = os.path.dirname(full_path)
     return os.path.split(os.path.split(dirname)[0])[1]
 
+def compute_src_date_num(full_path: str) -> int:
+    basename = os.path.basename(full_path)
+    mm = basename[5:7]
+    dd = basename[8:10]
+    src_date_num = int(mm) * 100 + int(dd)
+    return src_date_num
+
 def compute_num(full_path: str, num_start_idx: int) -> int:
+
     if num_start_idx is None:
         log.error("Cannot compute num for %s" % (full_path))
         return None
@@ -203,7 +216,7 @@ def compute_num(full_path: str, num_start_idx: int) -> int:
     try:
         return int(fn[num_start_idx:])
     except ValueError as e:
-        log.error("Cannot parse num for %s due to %s" % (full_path , e))
+        log.debug("Cannot parse num for %s due to %s" % (full_path , e))
 
     return None
 

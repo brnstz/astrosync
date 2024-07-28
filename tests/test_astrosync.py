@@ -28,10 +28,16 @@ class TestPbdb(unittest.TestCase):
         with open(os.path.join(dst, "journal", "journal1215.txt")) as f: copy_b = f.read()
         self.assertEqual(orig_b, copy_b)
 
+        with open(os.path.join(src, "B", "2024-12-17 journal.txt")) as f: orig_c = f.read()
+        with open(os.path.join(dst, "journal", "journal1217.txt")) as f: copy_c = f.read()
+        self.assertEqual(orig_c, copy_c)
+
         self.assertGreater(len(orig_a), 0)
         self.assertGreater(len(copy_a), 0)
         self.assertGreater(len(orig_b), 0)
         self.assertGreater(len(copy_b), 0)
+        self.assertGreater(len(orig_c), 0)
+        self.assertGreater(len(copy_c), 0)
 
     def test_normal_entries(self):
 
